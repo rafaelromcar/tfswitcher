@@ -4,6 +4,9 @@ import argparse
 import re
 import os
 import sys
+import stat
+import urllib.request
+from zipfile import ZipFile
 
 
 def remove_version(version):
@@ -49,7 +52,11 @@ def switch_to_version(version):
     # Paths
     link_destination = "/usr/local/bin/terraform"
     terraform_install_folder = "/usr/local/bin/"
-    version_path = terraform_install_folder + "terraform-" + version
+    available_versions = "https://releases.hashicorp.com/terraform/"
+
+    version_path = os.path.join(terraform_install_folder, "terraform-{}".format(version))
+    download_url = "https://releases.hashicorp.com/terraform/{}/terraform_{}_linux_amd64.zip".format(version, version)
+    temp_zip = os.path.join("/tmp", "terraform.zip")
 
     # Parse the arg to be sure the version has the good format
     pattern = re.compile(r"\d+\.\d+\.\d+")
@@ -59,8 +66,32 @@ def switch_to_version(version):
 
     # Check if version exists on the system
     if not os.path.exists(version_path):
-        print("Switch not possible.\nThe version you want to use must be installed before on the path {}".format(version_path))
-        sys.exit(1)
+        print("Version not present on the system. The script will download and install it.")
+
+        # Check that the version is available
+        with urllib.request.urlopen(available_versions) as versions:
+            if version not in versions.read().decode('utf-8'):
+                print("The version is not available on the official website.")
+                sys.exit(1)
+
+        # Download the zip of the given version
+        with urllib.request.urlopen(download_url) as tf_zip:
+            with open(temp_zip, "wb") as temp_destination:
+                temp_destination.write(tf_zip.read())
+        print("Version downloaded.")
+
+        # Install the version on the install_dir
+        with ZipFile(temp_zip) as tf_zip:
+            with tf_zip.open("terraform") as binary:
+                with open(version_path, "wb") as binary_destination:
+                    binary_destination.write(binary.read())
+        # Configure the permissions as 755 on the file.
+        # Stat module is used to make it compatible with more Python versions
+        os.chmod(version_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+        print("Version installed on {}.".format(version_path))
+
+        # Clean the temporary zip file
+        os.remove(temp_zip)
 
     # Remove the old symlink
     if os.path.exists(link_destination):
