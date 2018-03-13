@@ -4,6 +4,7 @@ import argparse
 import re
 import os
 import sys
+import stat
 import urllib.request
 from zipfile import ZipFile
 
@@ -84,7 +85,9 @@ def switch_to_version(version):
             with tf_zip.open("terraform") as binary:
                 with open(version_path, "wb") as binary_destination:
                     binary_destination.write(binary.read())
-        
+        # Configure the permissions as 755 on the file.
+        # Stat module is used to make it compatible with more Python versions
+        os.chmod(version_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         print("Version installed on {}.".format(version_path))
 
         # Clean the temporary zip file
