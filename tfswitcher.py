@@ -12,7 +12,6 @@ from zipfile import ZipFile
 def remove_version(version):
     """
     Remove the given version if it is installed
-    :param version:
     """
     # Paths
     link_path = "/usr/local/bin/terraform"
@@ -110,7 +109,7 @@ def switch_to_version(version):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='This script switches between Terraform versions.')
-    parser.add_argument("--remove", dest="remove", action="store_true",
+    parser.add_argument("-r", "--remove", dest="remove", action="store_true",
                         help="Add the flag to uninstall the given version, if it is installed on the system.")
     parser.add_argument('version', metavar='X.Y.Z', help='The version of Terraform you want to use with the script.')
 
